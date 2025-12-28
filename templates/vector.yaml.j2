@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+
+data_dir: "/var/lib/vector"
+
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+  playground: false
+
+sources:
+  generated_logs:
+    type: demo_logs
+    format: syslog
+    interval: 1
+  
+sinks:
+  to_clickhouse:
+    type: clickhouse
+    inputs:
+      - generated_logs
+    endpoint: "http://{{ clickhouse_host }}:8123"
+    database: "logs"
+    table: "logs"
+    acknowledgements:
+      enabled: false
+    healthcheck:
+      enabled: false
+    compression: gzip
+    skip_unknown_fields: true
