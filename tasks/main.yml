@@ -5,12 +5,19 @@
     - name: Download and Install vector
       block:
         - name: Get vector distrib
+          become: yes
           ansible.builtin.get_url:
-            url: "https://yum.vector.dev/stable/vector-0/x86_64/vector-{{ vector_version }}.x86_64.rpm"
+            url: "https://github.com/vectordotdev/vector/releases/download/v0.51.1/vector-{{ vector_version }}.x86_64.rpm"
             dest: "./vector-{{ vector_version }}.rpm"
             mode: '0644'
+            validate_certs: false
+            timeout: 100
+          register: download_result
+          until: download_result is succeeded
+          retries: 3
+          delay: 20
         - name: Install vector
-          become: true
+          become: yes
           ansible.builtin.yum:
             name:
               - vector-{{ vector_version }}.rpm
@@ -19,20 +26,20 @@
         - name: Flush handlers
           ansible.builtin.meta: flush_handlers
     - name: Create Vector config directory
-      become: true
+      become: yes
       ansible.builtin.file:
         path: /etc/vector
         state: directory
         mode: '0755'
     - name: Deploy Vector configuration
-      become: true
+      become: yes
       ansible.builtin.template:
         src: vector.yaml.j2
         dest: /etc/vector/vector.yaml
         mode: '0644'
       notify: Start (restart) vector service
     - name: Ensure Vector is running
-      become: true
+      become: yes
       ansible.builtin.service:
         name: vector
         state: started

@@ -1,0 +1,23 @@
+---
+dependency:
+  name: galaxy
+  enabled: true
+driver:
+  name: docker
+lint: |
+  ansible-lint .
+  yamllint .
+platforms:
+  - name: centos7
+    image: 'antmelekhin/docker-systemd:centos-7'
+    volumes:
+      - '/sys/fs/cgroup:/sys/fs/cgroup:rw'
+      - '/var/lib/containerd'
+    cgroupns_mode: host
+    command: "/usr/sbin/init"
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+verifier:
+  name: ansible

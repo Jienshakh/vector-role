@@ -1,6 +1,6 @@
 ---
 - name: Start (restart) vector service
-  become: true
+  become: yes
   ansible.builtin.service:
     name: vector
     state: restarted
