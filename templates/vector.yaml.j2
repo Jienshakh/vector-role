@@ -18,7 +18,7 @@ sinks:
     type: clickhouse
     inputs:
       - generated_logs
-    endpoint: "http://{{ clickhouse_host }}:8123"
+    endpoint: "http://{{ clickhouse_host | default('localhost') }}:8123"
     database: "logs"
     table: "logs"
     acknowledgements:

@@ -1,10 +1,57 @@
 ---
-# This is an example playbook to execute Ansible tests.
-
-- name: Verify
+- name: Verify Vector installation and configuration
   hosts: all
-  gather_facts: false
+  gather_facts: true
   tasks:
-  - name: Example assertion
-    assert:
-      that: true
+    - name: Check if Vector binary exists
+      ansible.builtin.stat:
+        path: /usr/bin/vector
+      register: vector_binary
+      changed_when: false
+    - name: Assert Vector binary exists
+      ansible.builtin.assert:
+        that:
+          - vector_binary.stat.exists
+          - vector_binary.stat.isreg
+        success_msg: "✓ Vector binary exists"
+        fail_msg: "✗ Vector binary not found"
+    - name: Check Vector config file
+      ansible.builtin.stat:
+        path: /etc/vector/vector.yaml
+      register: vector_config
+      changed_when: false
+    - name: Debug config file info
+      ansible.builtin.debug:
+        var: vector_config
+      when: false
+    - name: Assert Vector config file exists
+      ansible.builtin.assert:
+        that:
+          - vector_config.stat.exists
+          - vector_config.stat.isreg
+        success_msg: "✓ Vector config file exists"
+        fail_msg: "✗ Vector config file not found"
+    - name: Check Vector service status (Systemd)
+      ansible.builtin.systemd:
+        name: vector
+      register: vector_service
+      changed_when: false
+      when: ansible_service_mgr == "systemd"
+    - name: Assert Vector service is running (Systemd)
+      ansible.builtin.assert:
+        that:
+          - vector_service.status.ActiveState == 'active'
+          - vector_service.status.UnitFileState == 'enabled'
+        success_msg: "✓ Vector service is active and enabled"
+        fail_msg: "✗ Vector service is not running properly"
+      when: ansible_service_mgr == "systemd"
+    - name: Check if Vector is listening on ports
+      ansible.builtin.shell:
+        cmd: ss -tlnp | grep vector || netstat -tlnp | grep vector
+      register: vector_ports
+      changed_when: false
+      ignore_errors: true
+    - name: Log Vector port information
+      ansible.builtin.debug:
+        msg: "Vector is listening on: {{ vector_ports.stdout_lines }}"
+      when: vector_ports.stdout_lines | length > 0

@@ -2,12 +2,12 @@
 - name: Download, Install and configure vector
   tags: vector
   block:
-    - name: Download and Install vector
+    - name: Download and Install vector (RedHat family)
       block:
-        - name: Get vector distrib
+        - name: Get vector distrib (RedHat family)
           become: yes
           ansible.builtin.get_url:
-            url: "https://github.com/vectordotdev/vector/releases/download/v0.51.1/vector-{{ vector_version }}.x86_64.rpm"
+            url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm"
             dest: "./vector-{{ vector_version }}.rpm"
             mode: '0644'
             validate_certs: false
@@ -16,15 +16,37 @@
           until: download_result is succeeded
           retries: 3
           delay: 20
-        - name: Install vector
+        - name: Install vector (RedHat family)
           become: yes
           ansible.builtin.yum:
             name:
               - vector-{{ vector_version }}.rpm
             disable_gpg_check: true
           notify: Start (restart) vector service
-        - name: Flush handlers
-          ansible.builtin.meta: flush_handlers
+      when: ansible_os_family == "RedHat"
+    - name: Download and Install vector (Debian/Ubuntu)
+      block:
+        - name: Get vector distrib (Debian/Ubuntu)
+          become: yes
+          ansible.builtin.get_url:
+            url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+            dest: "./vector-{{ vector_version }}.deb"
+            mode: '0644'
+            validate_certs: false
+            timeout: 100
+          register: download_result
+          until: download_result is succeeded
+          retries: 3
+          delay: 20
+        - name: Install vector (Debian/Ubuntu)
+          become: yes
+          ansible.builtin.apt:
+            deb: ./vector-{{ vector_version }}.deb
+            state: present
+          notify: Start (restart) vector service
+      when: ansible_os_family == "Debian"
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
     - name: Create Vector config directory
       become: yes
       ansible.builtin.file:
